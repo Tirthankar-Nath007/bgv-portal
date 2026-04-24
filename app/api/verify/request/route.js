@@ -8,8 +8,7 @@ import {
   findVerificationRecord,
   getVerificationRecordsByVerifier,
   generateSequentialId
-} from '@/lib/mongodb.data.service';
-import VerificationRecord from '@/lib/models/VerificationRecord.js';
+} from '@/lib/sql.data.service';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -76,13 +75,13 @@ export async function POST(request) {
     const fnfStatus = calculateFnFStatus(employee.exitReason, employee.dateOfLeaving);
 
     // Generate verification ID
-    const verificationId = await generateSequentialId('VER', VerificationRecord);
+    const verificationId = await generateSequentialId('VER');
 
     // Create verification record
     const verificationRecord = await addVerificationRecord({
       verificationId,
-      verifierId: decoded.id,
-      employeeId: employeeId.toUpperCase(),
+      verifierId: parseInt(decoded.id),
+      employeeId: employee.id,  // Use numeric employee ID from database
       submittedData: verificationData,
       comparisonResults: comparisonResults.comparisonResults,
       overallStatus: comparisonResults.overallStatus,
@@ -166,7 +165,7 @@ export async function GET(request) {
     if (verificationId) {
       // Find verification record
       const verificationRecord = await findVerificationRecord(verificationId);
-      if (!verificationRecord || verificationRecord.verifierId !== decoded.id) {
+      if (!verificationRecord || parseInt(verificationRecord.verifierId) !== parseInt(decoded.id)) {
         return NextResponse.json({
           success: false,
           message: 'Verification record not found or you do not have permission to access it'

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { schemas } from '@/lib/validation';
 import { generateToken } from '@/lib/auth';
-import { findVerifierByEmail, updateVerifier, logAccess } from '@/lib/mongodb.data.service';
+import { findVerifierByEmail, updateVerifier, logAccess } from '@/lib/sql.data.service';
 import bcrypt from 'bcryptjs';
 
 // Test mode is controlled by environment variable - disabled in production

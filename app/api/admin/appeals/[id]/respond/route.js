@@ -7,8 +7,7 @@ import {
   findVerifierById,
   findVerificationRecord,
   findEmployeeById
-} from '@/lib/mongodb.data.service';
-import { sendAppealResponseEmail } from '@/lib/services/emailService';
+} from '@/lib/sql.data.service';
 
 export async function POST(request, { params }) {
   try {
@@ -23,6 +22,11 @@ export async function POST(request, { params }) {
 
     const decoded = verifyToken(token);
 
+    // Super admin has all permissions
+    const permissions = decoded.role === 'super_admin' 
+        ? ['view_appeals', 'manage_appeals', 'view_employees', 'manage_employees', 'send_emails', 'view_reports', 'manage_admins']
+        : (decoded.permissions || []);
+
     if (!['admin', 'hr_manager', 'super_admin'].includes(decoded.role)) {
       return NextResponse.json({
         success: false,
@@ -31,7 +35,7 @@ export async function POST(request, { params }) {
     }
 
     // Check permissions
-    const hasPermission = decoded.permissions?.includes('manage_appeals');
+    const hasPermission = permissions.includes('manage_appeals');
     if (!hasPermission) {
       return NextResponse.json({
         success: false,
@@ -88,17 +92,18 @@ export async function POST(request, { params }) {
       reviewedAt: new Date()
     });
 
-    // Send email notification to verifier ONLY if verifier exists
-    let emailSent = false;
-    if (verifier) {
-      try {
-        await sendAppealResponseEmail(updatedAppeal, verifier.email);
-        emailSent = true;
-      } catch (emailError) {
-        console.error('Failed to send appeal response email:', emailError);
-        // Continue with the response, but log the error
-      }
-    }
+    // EMAIL NOTIFICATION DISABLED - Uncomment when email provider is configured
+    // TODO: Uncomment when email service is ready
+    // let emailSent = false;
+    // if (verifier) {
+    //   try {
+    //     await sendAppealResponseEmail(updatedAppeal, verifier.email);
+    //     emailSent = true;
+    //   } catch (emailError) {
+    //     console.error('Failed to send appeal response email:', emailError);
+    //   }
+    // }
+    console.log('[EMAIL] Would send appeal response to:', verifier ? verifier.email : 'unknown');
 
     // Return updated appeal information
     return NextResponse.json({
@@ -110,7 +115,7 @@ export async function POST(request, { params }) {
         employeeId: updatedAppeal.employeeId,
         verifierEmail: verifier ? verifier.email : null,
         reviewedAt: updatedAppeal.reviewedAt,
-        emailSent: emailSent
+        emailSent: false // Email disabled
       }
     }, { status: 200 });
 
@@ -138,6 +143,11 @@ export async function GET(request, { params }) {
 
     const decoded = verifyToken(token);
 
+    // Super admin has all permissions
+    const permissions = decoded.role === 'super_admin' 
+        ? ['view_appeals', 'manage_appeals', 'view_employees', 'manage_employees', 'send_emails', 'view_reports', 'manage_admins']
+        : (decoded.permissions || []);
+
     if (!['admin', 'hr_manager', 'super_admin'].includes(decoded.role)) {
       return NextResponse.json({
         success: false,
@@ -146,7 +156,7 @@ export async function GET(request, { params }) {
     }
 
     // Check permissions
-    const hasPermission = decoded.permissions?.includes('view_appeals');
+    const hasPermission = permissions.includes('view_appeals');
     if (!hasPermission) {
       return NextResponse.json({
         success: false,
@@ -167,8 +177,8 @@ export async function GET(request, { params }) {
 
     // Get verifier and verification information
     const verifier = await findVerifierById(appeal.verifierId);
-    const verificationRecord = await findVerificationRecord(appeal.verificationId);
-    const employee = await findEmployeeById(appeal.employeeId);
+    const verificationRecord = await findVerificationRecord(appeal.verificationId?.toString());
+    const employee = await findEmployeeById(appeal.employeeId?.toString());
 
     return NextResponse.json({
       success: true,

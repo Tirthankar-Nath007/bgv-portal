@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { schemas } from '@/lib/validation';
 import { generateToken } from '@/lib/auth';
-import { findAdminByUsername, updateAdminLastLogin, logAccess } from '@/lib/mongodb.data.service';
+import { findAdminByUsername, updateAdminLastLogin, logAccess } from '@/lib/sql.data.service';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {

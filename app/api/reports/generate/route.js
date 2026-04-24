@@ -3,14 +3,12 @@ import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 import {
   findVerificationRecord,
   updateVerificationRecord,
-  findEmployeeById
-} from '@/lib/mongodb.data.service';
+  findEmployeeByNumericId
+} from '@/lib/sql.data.service';
 import { generateVerificationReportPDF } from '@/lib/services/pdfService';
-import { sendVerificationReportEmail } from '@/lib/services/emailService';
 
 export async function POST(request) {
   try {
-    // Authenticate verifier
     const token = extractTokenFromHeader(request);
     if (!token) {
       return NextResponse.json({
@@ -28,7 +26,6 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    // Parse request body
     const body = await request.json();
     const { verificationId, sendEmail = false } = body;
 
@@ -39,18 +36,16 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Find verification record
     const verificationRecord = await findVerificationRecord(verificationId);
 
-    if (!verificationRecord || verificationRecord.verifierId !== decoded.id) {
+    if (!verificationRecord || parseInt(verificationRecord.verifierId) !== parseInt(decoded.id)) {
       return NextResponse.json({
         success: false,
         message: 'Verification record not found or you do not have permission'
       }, { status: 404 });
     }
 
-    // Find employee details
-    const employee = await findEmployeeById(verificationRecord.employeeId);
+    const employee = await findEmployeeByNumericId(verificationRecord.employeeId);
     if (!employee) {
       return NextResponse.json({
         success: false,
@@ -58,7 +53,7 @@ export async function POST(request) {
       }, { status: 404 });
     }
 
-    // Check if PDF already exists
+    // Check if PDF already exists - return existing base64 PDF
     if (verificationRecord.pdfReportUrl) {
       return NextResponse.json({
         success: true,
@@ -70,7 +65,6 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // Prepare data for PDF generation
     const verificationData = {
       verificationId: verificationRecord.verificationId,
       verifiedAt: verificationRecord.verificationCompletedAt,
@@ -99,43 +93,38 @@ export async function POST(request) {
       fnfStatus: employee.fnfStatus
     };
 
-    // Generate PDF
+    // Generate PDF (now returns base64)
     const pdfResult = await generateVerificationReportPDF(verificationData, employeeData);
 
-    // Update verification record with PDF info
+    // Update verification record with base64 PDF
     await updateVerificationRecord(verificationId, {
-      pdfReportUrl: pdfResult.s3Url,
-      pdfReportPath: pdfResult.s3Key,
+      pdfReportUrl: pdfResult.s3Url, // This is now a base64 data URL
       updatedAt: new Date()
     });
 
-    // Send email if requested
+    // EMAIL NOTIFICATION DISABLED - Uncomment when email provider is configured
+    // TODO: Uncomment when email service is ready
+    // if (sendEmail) {
+    //   try {
+    //     await sendVerificationReportEmail(
+    //       { verificationId, employeeData, comparisonResults: verificationData.comparisonResults, overallStatus, matchScore, summary },
+    //       decoded.email,
+    //       pdfResult.s3Url
+    //     );
+    //   } catch (emailError) {
+    //     console.error('Failed to send verification report email:', emailError);
+    //   }
+    // }
     if (sendEmail) {
-      try {
-        await sendVerificationReportEmail(
-          {
-            verificationId: verificationData.verificationId,
-            employeeData,
-            comparisonResults: verificationData.comparisonResults,
-            overallStatus: verificationData.overallStatus,
-            matchScore: verificationData.matchScore,
-            summary: verificationData.summary
-          },
-          decoded.email,
-          pdfResult.s3Url
-        );
-      } catch (emailError) {
-        console.error('Failed to send verification report email:', emailError);
-        // Continue, but log the error
-      }
+      console.log('[EMAIL] Would send verification report to:', decoded.email);
     }
 
     return NextResponse.json({
       success: true,
       message: 'PDF report generated successfully',
       data: {
-        pdfUrl: pdfResult.s3Url,
-        fileName: `${pdfResult.filename}`,
+        pdfUrl: pdfResult.s3Url, // Base64 data URL
+        fileName: pdfResult.filename,
         generatedAt: new Date(),
         emailSent: sendEmail
       }
@@ -154,7 +143,6 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    // Authenticate verifier
     const token = extractTokenFromHeader(request);
     if (!token) {
       return NextResponse.json({
@@ -172,7 +160,6 @@ export async function GET(request) {
       }, { status: 403 });
     }
 
-    // Get query parameters
     const { searchParams } = new URL(request.url);
     const verificationId = searchParams.get('verificationId');
 
@@ -183,17 +170,15 @@ export async function GET(request) {
       }, { status: 400 });
     }
 
-    // Find verification record
     const verificationRecord = await findVerificationRecord(verificationId);
 
-    if (!verificationRecord || verificationRecord.verifierId !== decoded.id) {
+    if (!verificationRecord || parseInt(verificationRecord.verifierId) !== parseInt(decoded.id)) {
       return NextResponse.json({
         success: false,
         message: 'Verification record not found'
       }, { status: 404 });
     }
 
-    // Check if PDF exists
     if (!verificationRecord.pdfReportUrl) {
       return NextResponse.json({
         success: false,
@@ -221,7 +206,6 @@ export async function GET(request) {
   }
 }
 
-// Helper functions
 function getFieldLabel(fieldName) {
   const labels = {
     employeeId: 'Employee ID',

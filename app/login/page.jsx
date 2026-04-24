@@ -1,15 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import LoginForm from '@/components/auth/LoginForm';
-import OtpLoginForm from '@/components/auth/OtpLoginForm';
 import Icon from '@/components/Icon';
 
 export default function VerifierLoginPage() {
-  const [loginMethod, setLoginMethod] = useState('otp'); // 'password' or 'otp'
-
   return (
     <motion.div
       className="flex items-center justify-center min-h-[calc(100vh-250px)] bg-base-200 py-12 px-4 sm:px-6 lg:px-8"
@@ -32,29 +29,7 @@ export default function VerifierLoginPage() {
               </p>
             </div>
 
-            {/* Login Method Tabs */}
-            <div className="tabs tabs-boxed bg-base-200 mb-6">
-              <button
-                className={`tab flex-1 gap-2 ${loginMethod === 'otp' ? 'tab-active bg-primary text-white' : ''}`}
-                onClick={() => setLoginMethod('otp')}
-              >
-                <Icon name="Smartphone" className="w-4 h-4" />
-                OTP Login
-              </button>
-              <button
-                className={`tab flex-1 gap-2 ${loginMethod === 'password' ? 'tab-active bg-primary text-white' : ''}`}
-                onClick={() => setLoginMethod('password')}
-              >
-                <Icon name="Lock" className="w-4 h-4" />
-                Password
-              </button>
-            </div>
-
-            {loginMethod === 'otp' ? (
-              <OtpLoginForm onLoginSuccess="/verify" />
-            ) : (
-              <LoginForm userType="verifier" onLoginSuccess="/verify" />
-            )}
+            <LoginForm userType="verifier" onLoginSuccess="/verify" />
 
             <div className="divider my-6 text-sm">New Here?</div>
 

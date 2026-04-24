@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { schemas } from '@/lib/validation';
 import { generateToken } from '@/lib/auth';
-import { findVerifierByEmail, addVerifier } from '@/lib/mongodb.data.service';
+import { findVerifierByEmail, addVerifier } from '@/lib/sql.data.service';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
@@ -83,13 +83,15 @@ export async function POST(request) {
       createdAt: verifierObj.createdAt
     };
 
-    // Send welcome email (optional - will fail gracefully if not configured)
-    try {
-      const { sendWelcomeEmail } = await import('@/lib/services/emailService');
-      await sendWelcomeEmail(verifierObj);
-    } catch (emailError) {
-      console.log('Welcome email not sent (email service not configured):', emailError.message);
-    }
+    // EMAIL NOTIFICATION DISABLED - Uncomment when email provider is configured
+    // TODO: Uncomment when email service is ready
+    // try {
+    //   const { sendWelcomeEmail } = await import('@/lib/services/emailService');
+    //   await sendWelcomeEmail(verifierObj);
+    // } catch (emailError) {
+    //   console.log('Welcome email not sent (email service not configured):', emailError.message);
+    // }
+    console.log('[EMAIL] Would send welcome email to:', verifierObj.email);
 
     return NextResponse.json({
       success: true,
