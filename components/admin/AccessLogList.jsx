@@ -83,21 +83,25 @@ const AccessLogList = () => {
     const formatUserAgent = (ua) => {
         if (!ua) return '-';
 
-        // Simple OS detection
+        // OS detection - more complete
         let os = 'Unknown OS';
-        if (ua.includes('Windows')) os = 'Windows';
-        else if (ua.includes('Mac')) os = 'MacOS';
+        if (ua.includes('Windows NT 10.0')) os = 'Windows 10/11';
+        else if (ua.includes('Windows')) os = 'Windows';
+        else if (ua.includes('Mac OS X')) os = 'macOS';
+        else if (ua.includes('Mac')) os = 'Mac';
         else if (ua.includes('Linux')) os = 'Linux';
         else if (ua.includes('Android')) os = 'Android';
-        else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+        else if (ua.includes('iPhone')) os = 'iPhone';
+        else if (ua.includes('iPad')) os = 'iPad';
 
-        // Simple Browser detection
-        // Order matters: Edge/Chrome often contain "Safari", Chrome contains "Safari", etc.
+        // Browser detection - order matters, check more specific first
         let browser = 'Unknown Browser';
         if (ua.includes('Edg/')) browser = 'Edge';
-        else if (ua.includes('Chrome/')) browser = 'Chrome';
         else if (ua.includes('Firefox/')) browser = 'Firefox';
+        else if (ua.includes('Chrome/') && !ua.includes('Edg/')) browser = 'Chrome';
         else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+        else if (ua.includes('curl/')) browser = 'cURL';
+        else if (ua.includes('Postman/')) browser = 'Postman';
 
         return `${browser} on ${os}`;
     };
@@ -153,21 +157,24 @@ const AccessLogList = () => {
                             <th>Timestamp</th>
                             <th>User (Email)</th>
                             <th>Role</th>
+                            <th>Action</th>
                             <th>Status</th>
                             <th>IP Address</th>
-                            <th>Details</th>
+                            <th>Browser / OS</th>
+                            <th>Failure Reason</th>
+                            <th>Metadata</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan="6" className="text-center py-8">
+                                <td colSpan="9" className="text-center py-8">
                                     <span className="loading loading-spinner loading-md"></span>
                                 </td>
                             </tr>
                         ) : logs.length === 0 ? (
                             <tr>
-                                <td colSpan="6" className="text-center py-8 text-base-content/60">
+                                <td colSpan="9" className="text-center py-8 text-base-content/60">
                                     No logs found matching your criteria
                                 </td>
                             </tr>
@@ -181,8 +188,13 @@ const AccessLogList = () => {
                                         <div className="font-medium">{log.email}</div>
                                     </td>
                                     <td>
-                                        <span className={`badge badge-sm ${log.role === 'admin' ? 'badge-primary' : 'badge-ghost'}`}>
+                                        <span className={`badge badge-sm ${log.role === 'admin' ? 'badge-primary' : log.role === 'verifier' ? 'badge-info' : 'badge-ghost'}`}>
                                             {log.role}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className="badge badge-sm badge-outline">
+                                            {log.action}
                                         </span>
                                     </td>
                                     <td>
@@ -191,17 +203,32 @@ const AccessLogList = () => {
                                             {log.status}
                                         </span>
                                     </td>
-                                    <td className="font-mono text-xs text-base-content/70">
+                                    <td className="font-mono text-xs">
                                         {formatIP(log.ipAddress)}
                                     </td>
-                                    <td className="max-w-xs truncate text-xs">
+                                    <td className="text-xs">
                                         {log.status === 'FAILURE' ? (
-                                            <span className="text-error">{log.failureReason}</span>
+                                            <span className="text-error">{log.failureReason || '-'}</span>
                                         ) : (
-                                            <span className="text-base-content/50 truncate" title={log.userAgent}>
+                                            <span className="text-base-content/70" title={log.userAgent}>
                                                 {formatUserAgent(log.userAgent)}
                                             </span>
                                         )}
+                                    </td>
+                                    <td className="text-xs max-w-xs">
+                                        {log.failureReason ? (
+                                            <span className="text-error text-wrap">{log.failureReason}</span>
+                                        ) : '-'}
+                                    </td>
+                                    <td className="text-xs max-w-xs">
+                                        {log.metadata ? (
+                                            <details>
+                                                <summary className="cursor-pointer text-primary">View</summary>
+                                                <pre className="text-xs bg-base-200 p-2 rounded mt-1 whitespace-pre-wrap">
+                                                    {JSON.stringify(log.metadata, null, 2)}
+                                                </pre>
+                                            </details>
+                                        ) : '-'}
                                     </td>
                                 </tr>
                             ))
