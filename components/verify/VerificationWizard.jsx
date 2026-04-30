@@ -130,14 +130,46 @@ const VerificationWizard = () => {
 
     setIsDownloadLoading(true);
     try {
-      const response = await reportAPI.generateReport(verificationResult.verificationId);
+      const sessionData = localStorage.getItem('verifier_session');
+      const session = sessionData ? JSON.parse(sessionData) : null;
+      
+      if (!session?.token) {
+        showToast('Session expired. Please login again.', 'error');
+        return;
+      }
 
-      if (response && response.success && response.data && response.data.pdfUrl) {
-        window.open(response.data.pdfUrl, '_blank');
-        showToast('Report generated successfully!', 'success');
+      const response = await fetch(`/api/reports/generate?verificationId=${verificationResult.verificationId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.token}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Get filename from Content-Disposition header or use default
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `verification-report-${verificationResult.verificationId}.pdf`;
+        
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="?(.+?)"?(;|$)/);
+          if (match) filename = match[1];
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showToast('Report downloaded successfully!', 'success');
       } else {
-        console.error('Report generation failed:', response);
-        showToast(response?.message || 'Failed to generate report', 'error');
+        const errorData = await response.json();
+        console.error('Report generation failed:', errorData);
+        showToast(errorData?.message || 'Failed to generate report', 'error');
       }
     } catch (error) {
       console.error("Report generation error:", error);

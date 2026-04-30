@@ -53,18 +53,9 @@ export async function POST(request) {
       }, { status: 404 });
     }
 
-    // Check if PDF already exists - return existing base64 PDF
-    if (verificationRecord.pdfReportUrl) {
-      return NextResponse.json({
-        success: true,
-        message: 'PDF report already exists',
-        data: {
-          pdfUrl: verificationRecord.pdfReportUrl,
-          generatedAt: verificationRecord.updatedAt || new Date()
-        }
-      }, { status: 200 });
-    }
-
+    // Check if PDF already exists - generate fresh on-the-fly instead of returning stored
+    // Note: pdfReportUrl column is kept in DB but not used for storage
+    
     const verificationData = {
       verificationId: verificationRecord.verificationId,
       verifiedAt: verificationRecord.verificationCompletedAt,
@@ -93,14 +84,11 @@ export async function POST(request) {
       fnfStatus: employee.fnfStatus
     };
 
-    // Generate PDF (now returns base64)
+    // Generate PDF (returns buffer)
     const pdfResult = await generateVerificationReportPDF(verificationData, employeeData);
 
-    // Update verification record with base64 PDF
-    await updateVerificationRecord(verificationId, {
-      pdfReportUrl: pdfResult.s3Url, // This is now a base64 data URL
-      updatedAt: new Date()
-    });
+    // Note: Not storing PDF in DB anymore - generating on-the-fly
+    // pdf_report_url column is kept for future reference but not used
 
     // EMAIL NOTIFICATION DISABLED - Uncomment when email provider is configured
     // TODO: Uncomment when email service is ready
@@ -109,7 +97,7 @@ export async function POST(request) {
     //     await sendVerificationReportEmail(
     //       { verificationId, employeeData, comparisonResults: verificationData.comparisonResults, overallStatus, matchScore, summary },
     //       decoded.email,
-    //       pdfResult.s3Url
+    //       pdfResult.buffer
     //     );
     //   } catch (emailError) {
     //     console.error('Failed to send verification report email:', emailError);
@@ -119,16 +107,17 @@ export async function POST(request) {
       console.log('[EMAIL] Would send verification report to:', decoded.email);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'PDF report generated successfully',
-      data: {
-        pdfUrl: pdfResult.s3Url, // Base64 data URL
-        fileName: pdfResult.filename,
-        generatedAt: new Date(),
-        emailSent: sendEmail
+    // Return PDF as downloadable file
+    const pdfBuffer = Buffer.from(pdfResult.buffer);
+    
+    return new Response(pdfBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${pdfResult.filename}"`,
+        'Content-Length': pdfBuffer.length.toString()
       }
-    }, { status: 200 });
+    });
 
   } catch (error) {
     console.error('PDF generation error:', error);
@@ -179,28 +168,57 @@ export async function GET(request) {
       }, { status: 404 });
     }
 
-    if (!verificationRecord.pdfReportUrl) {
-      return NextResponse.json({
-        success: false,
-        message: 'PDF report not yet generated for this verification'
-      }, { status: 404 });
-    }
+    // Generate PDF on-the-fly from existing DB data
+    const employee = await findEmployeeByNumericId(verificationRecord.employeeId);
+    
+    const verificationData = {
+      verificationId: verificationRecord.verificationId,
+      verifiedAt: verificationRecord.verificationCompletedAt,
+      verifierName: decoded.companyName,
+      overallStatus: verificationRecord.overallStatus,
+      matchScore: verificationRecord.matchScore,
+      comparisonResults: verificationRecord.comparisonResults.map(result => ({
+        field: result.field,
+        label: getFieldLabel(result.field),
+        verifierValue: result.verifierValue,
+        companyValue: result.companyValue,
+        isMatch: result.isMatch
+      })),
+      summary: generateComparisonSummary(verificationRecord.comparisonResults)
+    };
 
-    return NextResponse.json({
-      success: true,
-      message: 'PDF report found',
-      data: {
-        pdfUrl: verificationRecord.pdfReportUrl,
-        generatedAt: verificationRecord.updatedAt
+    const employeeData = employee ? {
+      employeeId: employee.employeeId,
+      name: employee.name,
+      entityName: employee.entityName,
+      department: employee.department,
+      dateOfJoining: employee.dateOfJoining,
+      dateOfLeaving: employee.dateOfLeaving,
+      designation: employee.designation,
+      exitReason: employee.exitReason,
+      fnfStatus: employee.fnfStatus
+    } : {};
+
+    const pdfResult = await generateVerificationReportPDF(verificationData, employeeData);
+
+    // Return PDF as downloadable file
+    const pdfBuffer = Buffer.from(pdfResult.buffer);
+    
+    return new Response(pdfBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${pdfResult.filename}"`,
+        'Content-Length': pdfBuffer.length.toString()
       }
-    }, { status: 200 });
+    });
 
   } catch (error) {
     console.error('Get PDF report error:', error);
 
     return NextResponse.json({
       success: false,
-      message: 'Failed to retrieve PDF report',
+      message: 'Failed to generate PDF report',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
