@@ -88,81 +88,82 @@ export default function AdminDashboardPage() {
 
         {/* Statistics Cards */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="card bg-base-100 shadow-md">
-                <div className="card-body p-6">
+                <div className="card-body p-4 sm:p-6">
                   <div className="loading loading-spinner loading-sm"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="card bg-base-100 shadow-md border-l-4 border-primary">
-              <div className="card-body p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-base-content/60">Total Verifications</p>
-                    <p className="text-2xl font-bold text-primary">{stats.totalVerifications}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+<div className="card bg-base-100 shadow-md border-l-4 border-primary">
+                <div className="card-body p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-base-content/60">Total Verifications</p>
+                      <p className="text-2xl font-bold text-primary">{stats.totalVerifications}</p>
+                    </div>
+                    <Icon name="FileCheck2" className="w-8 h-8 text-primary/20" />
                   </div>
-                  <Icon name="FileCheck2" className="w-8 h-8 text-primary/20" />
+                  <p className="text-xs text-base-content/50 mt-2">Last 30 days: {stats.recentVerifications}</p>
                 </div>
-                <p className="text-xs text-base-content/50 mt-2">Last 30 days: {stats.recentVerifications}</p>
               </div>
-            </div>
 
-            <div className="card bg-base-100 shadow-md border-l-4 border-warning">
-              <div className="card-body p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-base-content/60">Pending Queries</p>
-                    <p className="text-2xl font-bold text-warning">{stats.pendingAppeals}</p>
+<div className="card bg-base-100 shadow-md border-l-4 border-warning">
+                <div className="card-body p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-base-content/60">Pending Queries</p>
+                      <p className="text-2xl font-bold text-warning">{stats.pendingAppeals}</p>
+                    </div>
+                    <Icon name="FileWarning" className="w-8 h-8 text-warning/20" />
                   </div>
-                  <Icon name="FileWarning" className="w-8 h-8 text-warning/20" />
+                  <p className="text-xs text-base-content/50 mt-2">Total: {stats.totalAppeals}</p>
                 </div>
-                <p className="text-xs text-base-content/50 mt-2">Total: {stats.totalAppeals}</p>
               </div>
-            </div>
 
-            <div className="card bg-base-100 shadow-md border-l-4 border-success">
-              <div className="card-body p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-base-content/60">Active Verifiers</p>
-                    <p className="text-2xl font-bold text-success">{stats.activeVerifiers}</p>
+<div className="card bg-base-100 shadow-md border-l-4 border-success">
+                <div className="card-body p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-base-content/60">Active Verifiers</p>
+                      <p className="text-2xl font-bold text-success">{stats.activeVerifiers}</p>
+                    </div>
+                    <Icon name="Users" className="w-8 h-8 text-success/20" />
                   </div>
-                  <Icon name="Users" className="w-8 h-8 text-success/20" />
+                  <p className="text-xs text-base-content/50 mt-2">Total: {stats.totalVerifiers}</p>
                 </div>
-                <p className="text-xs text-base-content/50 mt-2">Total: {stats.totalVerifiers}</p>
               </div>
-            </div>
 
-            <div className="card bg-base-100 shadow-md border-l-4 border-info">
-              <div className="card-body p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-base-content/60">Employees</p>
-                    <p className="text-2xl font-bold text-info">{stats.totalEmployees}</p>
+<div className="card bg-base-100 shadow-md border-l-4 border-info">
+                <div className="card-body p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-base-content/60">Employees</p>
+                      <p className="text-2xl font-bold text-info">{stats.totalEmployees}</p>
+                    </div>
+                    <Icon name="Database" className="w-8 h-8 text-info/20" />
                   </div>
-                  <Icon name="Database" className="w-8 h-8 text-info/20" />
+                  <p className="text-xs text-base-content/50 mt-2">In records</p>
                 </div>
-                <p className="text-xs text-base-content/50 mt-2">In records</p>
               </div>
-            </div>
           </div>
         ) : null}
 
         {/* Tabs and Content */}
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body p-0">
-            <div role="tablist" className="tabs tabs-bordered tabs-lg w-full">
+            <div role="tablist" className="tabs tabs-bordered tabs-lg w-full overflow-x-auto">
               <a
                 role="tab"
                 className={`tab h-14 ${activeTab === 'appeals' ? 'tab-active font-bold' : ''}`}
                 onClick={() => setActiveTab('appeals')}
               >
-                Query Management
+                <span className="hidden sm:inline">Query Management</span>
+                <span className="sm:hidden">Queries</span>
                 {stats && stats.pendingAppeals > 0 && (
                   <span className="badge badge-warning badge-sm ml-2">
                     {stats.pendingAppeals}
@@ -174,7 +175,8 @@ export default function AdminDashboardPage() {
                 className={`tab h-14 ${activeTab === 'logs' ? 'tab-active font-bold' : ''}`}
                 onClick={() => setActiveTab('logs')}
               >
-                Access Logs
+                <span className="hidden sm:inline">Access Logs</span>
+                <span className="sm:hidden">Logs</span>
               </a>
             </div>
 

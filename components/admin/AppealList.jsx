@@ -111,6 +111,32 @@ export default function AppealList() {
     showToast('Queries exported successfully!', 'success');
   };
 
+  const renderAppealCard = (appeal) => (
+    <div key={appeal.appealId || appeal.id} className="card bg-base-100 shadow-sm p-4 mb-4">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="font-mono text-sm">{appeal.appealId || appeal.id}</p>
+          <p className="text-sm font-medium">Employee: {appeal.employeeId}</p>
+          <p className="text-xs text-base-content/70">
+            {appeal.verifierInfo ? appeal.verifierInfo.companyName : 'N/A'}
+          </p>
+        </div>
+        <span className={`badge ${getStatusBadge(appeal.status)} capitalize`}>
+          {appeal.status}
+        </span>
+      </div>
+      <div className="mt-2 text-xs text-base-content/50">
+        {new Date(appeal.createdAt || appeal.submittedAt).toLocaleDateString('en-GB')}
+      </div>
+      <div className="mt-3 text-right">
+        <Link href={`/admin/appeals/${appeal.appealId || appeal.id}`} className="btn btn-sm btn-outline btn-primary">
+          View
+          <Icon name="ArrowRight" className="w-4 h-4" />
+        </Link>
+      </div>
+    </div>
+  );
+
   const renderAppealTable = (appealsList, emptyMessage) => {
     if (appealsList.length === 0) {
       return (
@@ -177,8 +203,8 @@ export default function AppealList() {
       {toast.show && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
 
       {/* Date Range Filter */}
-      <div className="flex flex-wrap gap-4 mb-6 p-4 bg-base-200 rounded-lg">
-        <div className="form-control">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 p-4 bg-base-200 rounded-lg">
+        <div className="form-control w-full sm:w-auto">
           <label className="label">
             <span className="label-text text-sm font-medium">From Date</span>
           </label>
@@ -186,10 +212,10 @@ export default function AppealList() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="input input-bordered input-sm"
+            className="input input-bordered w-full"
           />
         </div>
-        <div className="form-control">
+        <div className="form-control w-full sm:w-auto">
           <label className="label">
             <span className="label-text text-sm font-medium">To Date</span>
           </label>
@@ -197,37 +223,38 @@ export default function AppealList() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="input input-bordered input-sm"
+            className="input input-bordered w-full"
           />
         </div>
-        <div className="form-control justify-end">
+        <div className="flex gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0">
           <button
             onClick={() => { setDateFrom(''); setDateTo(''); }}
             className="btn btn-ghost btn-sm"
           >
             <Icon name="X" className="w-4 h-4" />
-            Clear
+            <span className="hidden sm:inline">Clear</span>
+            <span className="sm:hidden">Clear</span>
           </button>
-        </div>
-        <div className="form-control justify-end ml-auto">
           <button
             onClick={handleExportAppeals}
             className="btn btn-outline btn-sm gap-2"
           >
             <Icon name="Download" className="w-4 h-4" />
-            Export {activeTab === 'pending' ? 'Pending' : 'Resolved'}
+            <span className="hidden sm:inline">Export {activeTab === 'pending' ? 'Pending' : 'Resolved'}</span>
+            <span className="sm:hidden">Export</span>
           </button>
         </div>
       </div>
 
       {/* Tabs for Pending and Resolved */}
-      <div className="tabs tabs-boxed mb-6">
+      <div className="tabs tabs-boxed mb-6 overflow-x-auto whitespace-nowrap">
         <button
           className={`tab gap-2 ${activeTab === 'pending' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
           <Icon name="Clock" className="w-4 h-4" />
-          Pending Queries
+          <span className="hidden sm:inline">Pending Queries</span>
+          <span className="sm:hidden">Pending</span>
           <span className="badge badge-warning badge-sm">{pendingAppeals.length}</span>
         </button>
         <button
@@ -235,17 +262,26 @@ export default function AppealList() {
           onClick={() => setActiveTab('resolved')}
         >
           <Icon name="CheckCircle" className="w-4 h-4" />
-          Resolved Queries
+          <span className="hidden sm:inline">Resolved Queries</span>
+          <span className="sm:hidden">Resolved</span>
           <span className="badge badge-success badge-sm">{resolvedAppeals.length}</span>
         </button>
       </div>
 
-      {/* Appeal Table based on active tab */}
-      {activeTab === 'pending' ? (
-        renderAppealTable(pendingAppeals, 'No pending queries found')
-      ) : (
-        renderAppealTable(resolvedAppeals, 'No resolved queries found')
-      )}
+      {/* Appeal Cards for mobile, Table for desktop */}
+      <div className="block sm:hidden">
+        {activeTab === 'pending' 
+          ? pendingAppeals.map(appeal => renderAppealCard(appeal))
+          : resolvedAppeals.map(appeal => renderAppealCard(appeal))
+        }
+      </div>
+      <div className="hidden sm:block">
+        {activeTab === 'pending' ? (
+          renderAppealTable(pendingAppeals, 'No pending queries found')
+        ) : (
+          renderAppealTable(resolvedAppeals, 'No resolved queries found')
+        )}
+      </div>
     </>
   );
 }

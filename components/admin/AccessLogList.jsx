@@ -106,13 +106,50 @@ const AccessLogList = () => {
         return `${browser} on ${os}`;
     };
 
-    return (
+    const renderLogCard = (log) => (
+    <div key={log._id} className="card bg-base-100 shadow-sm p-4 mb-4">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <p className="font-mono text-xs">{formatDate(log.timestamp)}</p>
+          <p className="font-medium text-sm">{log.email}</p>
+          <div className="flex gap-2 mt-1">
+            <span className={`badge badge-sm ${log.role === 'admin' ? 'badge-primary' : log.role === 'verifier' ? 'badge-info' : 'badge-ghost'}`}>
+              {log.role}
+            </span>
+            <span className={`badge badge-sm ${log.status === 'SUCCESS' ? 'badge-success text-white' : 'badge-error text-white'}`}>
+              {log.status === 'SUCCESS' ? <Icon name="Check" className="w-3 h-3 mr-1" /> : <Icon name="X" className="w-3 h-3 mr-1" />}
+              {log.status}
+            </span>
+            <span className="badge badge-sm badge-outline">
+              {log.action}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 text-xs text-base-content/70">
+        IP: {formatIP(log.ipAddress)} | {formatUserAgent(log.userAgent)}
+      </div>
+      {log.failureReason && (
+        <div className="mt-2 text-xs text-error">{log.failureReason}</div>
+      )}
+      {log.metadata && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-primary text-xs">View Metadata</summary>
+          <pre className="text-xs bg-base-200 p-2 rounded mt-1 whitespace-pre-wrap">
+            {JSON.stringify(log.metadata, null, 2)}
+          </pre>
+        </details>
+      )}
+    </div>
+  );
+
+  return (
         <div className="space-y-4">
             {/* Filters */}
-            <div className="flex flex-wrap gap-4 items-center justify-between bg-base-100 p-4 rounded-lg shadow-sm">
-                <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-center justify-between bg-base-100 p-4 rounded-lg shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                     <select
-                        className="select select-bordered select-sm"
+                        className="select select-bordered select-sm w-full sm:w-auto"
                         value={filter.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
                     >
@@ -122,7 +159,7 @@ const AccessLogList = () => {
                     </select>
 
                     <select
-                        className="select select-bordered select-sm"
+                        className="select select-bordered select-sm w-full sm:w-auto"
                         value={filter.role}
                         onChange={(e) => handleFilterChange('role', e.target.value)}
                     >
@@ -134,10 +171,11 @@ const AccessLogList = () => {
 
                 <button
                     onClick={() => fetchLogs(pagination.page)}
-                    className="btn btn-sm btn-ghost"
+                    className="btn btn-sm btn-ghost self-end sm:self-auto"
                     disabled={loading}
                 >
                     <Icon name="RefreshCw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Refresh</span>
                 </button>
             </div>
 
@@ -149,8 +187,21 @@ const AccessLogList = () => {
                 </div>
             )}
 
-            {/* Logs Table */}
-            <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
+            {/* Logs Cards for mobile, Table for desktop */}
+            <div className="block sm:hidden space-y-4">
+              {loading ? (
+                <div className="text-center py-8">
+                  <span className="loading loading-spinner loading-md"></span>
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="text-center py-8 text-base-content/60">
+                  No logs found matching your criteria
+                </div>
+              ) : (
+                logs.map(log => renderLogCard(log))
+              )}
+            </div>
+            <div className="hidden sm:block overflow-x-auto bg-base-100 rounded-lg shadow">
                 <table className="table w-full">
                     <thead className="bg-base-200">
                         <tr>
