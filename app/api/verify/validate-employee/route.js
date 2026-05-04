@@ -49,6 +49,8 @@ export async function POST(request) {
         const body = await request.json();
         const { employeeId, name, entityName } = body;
 
+        console.log('🔍 Validating employee:', { employeeId, name, entityName, verifierId });
+
         // Validate required fields
         if (!employeeId || !name) {
             return NextResponse.json({
@@ -59,6 +61,8 @@ export async function POST(request) {
 
         const normalizedEmployeeId = employeeId.toUpperCase().trim();
         const normalizedInputName = name.trim().toLowerCase();
+
+        console.log('Normalized Employee ID:', normalizedEmployeeId);
 
         // 1. Check if blocked BEFORE querying database
         const isBlocked = await isVerificationBlocked(verifierId, normalizedEmployeeId);
@@ -72,6 +76,10 @@ export async function POST(request) {
         // Find employee in MongoDB
         const employee = await findEmployeeById(normalizedEmployeeId);
 
+        console.log('Employee record found:', !!employee);
+
+        console.log('Employee details:', employee);
+
         if (!employee) {
             // Log failed attempt
             await incrementVerificationAttempt(verifierId, normalizedEmployeeId);
@@ -84,6 +92,9 @@ export async function POST(request) {
 
         // Check if name matches (case-insensitive)
         const employeeName = employee.name?.trim().toLowerCase() || '';
+
+        console.log('Employee Name from DB:', employeeName);
+        console.log('Normalized Input Name:', normalizedInputName);
 
         if (normalizedInputName !== employeeName) {
             // Log failed attempt
@@ -106,6 +117,7 @@ export async function POST(request) {
         // Validate Entity/Company if provided (for BGV case)
         if (entityName) {
             const employeeEntity = employee.entityName;
+            console.log('Employee Entity from DB:', employeeEntity);
             if (entityName !== employeeEntity) {
                 // Should entity mismatch count as a failed attempt? 
                 // Usually yes, to prevent fishing for correct entity.

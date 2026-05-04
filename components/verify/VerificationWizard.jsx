@@ -22,7 +22,8 @@ const VerificationWizard = () => {
     dateOfJoining: '',
     dateOfLeaving: '',
     designation: '',
-    exitReason: ''
+    // exitReason: '', // Commented out - not available in RPTDBUAT
+    consentGiven: false
   });
   const [consentGiven, setConsentGiven] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
@@ -243,7 +244,7 @@ const VerificationWizard = () => {
       setIsValidating(false);
     }
 
-    if (step === 3 && (!formData.dateOfJoining || !formData.dateOfLeaving || !formData.designation || !formData.exitReason)) {
+    if (step === 3 && (!formData.dateOfJoining || !formData.dateOfLeaving || !formData.designation)) { // || !formData.exitReason)) {
       showToast('Please fill in all required fields.', 'error');
       return;
     }
@@ -265,7 +266,7 @@ const VerificationWizard = () => {
         dateOfJoining: new Date(formData.dateOfJoining),
         dateOfLeaving: new Date(formData.dateOfLeaving),
         designation: formData.designation,
-        exitReason: formData.exitReason,
+        // exitReason: formData.exitReason, // Commented out - not used for RPTDBUAT
         consentGiven: consentGiven
       };
 
@@ -287,16 +288,16 @@ const VerificationWizard = () => {
   const handleStartOver = () => {
     setStep(1);
     setConsentGiven(false);
-    setFormData({
-      companyName: verifier?.companyName || '',
-      employeeId: '',
-      name: '',
-      entityName: '',
-      dateOfJoining: '',
-      dateOfLeaving: '',
-      designation: '',
-      exitReason: ''
-    });
+      setFormData({
+        employeeId: '',
+        name: '',
+        entityName: '',
+        dateOfJoining: '',
+        dateOfLeaving: '',
+        designation: '',
+        // exitReason: '', // Commented out - not available in RPTDBUAT
+        consentGiven: false
+      });
     setVerificationResult(null);
   };
 
@@ -460,7 +461,7 @@ const VerificationWizard = () => {
                     disabled={verifier?.isBgvAgency}
                   >
                     <option value="">Select Entity</option>
-                    <option value="TVSCSHIB">TVS Credit Services Limited</option>
+                    <option value="TVS Credit Services Ltd.">TVS Credit Services Ltd.</option>
                     <option value="Harita Receivables and Collection Services LLP">Harita Receivables and Collection Services LLP</option>
                     <option value="HIB">Harita Insurance Broking LLP</option>
                   </select>
@@ -534,9 +535,10 @@ const VerificationWizard = () => {
                   />
                 </div>
 
+                {/* Exit Reason - Commented out for RPTDBUAT (not available)
                 <div className="form-control">
                   <label className="label"><span className="label-text font-semibold">Exit Reason</span></label>
-                  <select name="exitReason" value={formData.exitReason} onChange={handleFormChange} className="select select-bordered" required>
+                  <select name="exitReason" value={formData.exitReason} onChange={handleFormChange} className="select select-bordered" disabled>
                     <option value="">Select Exit Reason</option>
                     <option value="Resigned">Resigned</option>
                     <option value="Terminated">Terminated</option>
@@ -545,6 +547,7 @@ const VerificationWizard = () => {
                     <option value="Contract Completed">Contract Completed</option>
                   </select>
                 </div>
+                */}
 
 
               </div>

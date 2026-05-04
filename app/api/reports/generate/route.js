@@ -80,7 +80,7 @@ export async function POST(request) {
       dateOfJoining: employee.dateOfJoining,
       dateOfLeaving: employee.dateOfLeaving,
       designation: employee.designation,
-      exitReason: employee.exitReason,
+      // exitReason: employee.exitReason, // Commented out for RPTDBUAT
       fnfStatus: employee.fnfStatus
     };
 
@@ -195,7 +195,7 @@ export async function GET(request) {
       dateOfJoining: employee.dateOfJoining,
       dateOfLeaving: employee.dateOfLeaving,
       designation: employee.designation,
-      exitReason: employee.exitReason,
+      // exitReason: employee.exitReason, // Commented out for RPTDBUAT
       fnfStatus: employee.fnfStatus
     } : {};
 
@@ -232,7 +232,7 @@ function getFieldLabel(fieldName) {
     dateOfJoining: 'Date of Joining',
     dateOfLeaving: 'Date of Leaving',
     designation: 'Designation',
-    exitReason: 'Exit Reason'
+    // exitReason: 'Exit Reason', // Commented out for RPTDBUAT
   };
   return labels[fieldName] || fieldName;
 }

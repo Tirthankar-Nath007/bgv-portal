@@ -251,39 +251,10 @@ async function seedDatabase() {
             }
         }
 
-        // Seed Employees
-        console.log('\n👔 Step 3: Seeding Employees...');
-        for (const employee of SEED_DATA.employees) {
-            try {
-                await connection.execute(`
-                    INSERT INTO BGV_EMPLOYEES (
-                        employee_id, name, email, entity_name, date_of_joining, date_of_leaving,
-                        designation, exit_reason, fnf_status, department
-                    ) VALUES (
-                        :employee_id, :name, :email, :entity_name, TO_DATE(:date_of_joining, 'YYYY-MM-DD'),
-                        TO_DATE(:date_of_leaving, 'YYYY-MM-DD'), :designation, :exit_reason, :fnf_status, :department
-                    )
-                `, {
-                    employee_id: employee.employeeId,
-                    name: employee.name,
-                    email: employee.email,
-                    entity_name: employee.entityName,
-                    date_of_joining: employee.dateOfJoining.toISOString().split('T')[0],
-                    date_of_leaving: employee.dateOfLeaving.toISOString().split('T')[0],
-                    designation: employee.designation,
-                    exit_reason: employee.exitReason,
-                    fnf_status: employee.fnfStatus,
-                    department: employee.department
-                });
-                console.log(`  ✓ Created employee: ${employee.employeeId} - ${employee.name}`);
-            } catch (error) {
-                if (error.message.includes('ORA-00001')) {
-                    console.log(`  - Employee ${employee.employeeId} already exists, skipping`);
-                } else {
-                    throw error;
-                }
-            }
-        }
+        // Seed Employees - SKIPPED (using RPTDBUAT as employee data source)
+        console.log('\n👔 Step 3: Seeding Employees... SKIPPED');
+        console.log('   Using RPTDBUAT (lmsautousr.employee_details@PUBLIC_SELECT_RPTDBUAT)');
+        console.log('   Total employees in RPTDBUAT: 77664+');
 
         await connection.commit();
 

@@ -72,7 +72,9 @@ export async function POST(request) {
     const comparisonResults = compareEmployeeData(verificationData, employee);
 
     // Calculate F&F status
-    const fnfStatus = calculateFnFStatus(employee.exitReason, employee.dateOfLeaving);
+    // Commented out exitReason for RPTDBUAT - not available
+    // const fnfStatus = calculateFnFStatus(employee.exitReason, employee.dateOfLeaving);
+    const fnfStatus = 'Pending'; // Default since exitReason not available in RPTDBUAT
 
     // Generate verification ID
     const verificationId = await generateSequentialId('VER');
@@ -81,7 +83,7 @@ export async function POST(request) {
     const verificationRecord = await addVerificationRecord({
       verificationId,
       verifierId: parseInt(decoded.id),
-      employeeId: employee.id,  // Use numeric employee ID from database
+      employeeId: employee.employeeId,  // Use employee ID from database
       submittedData: verificationData,
       comparisonResults: comparisonResults.comparisonResults,
       overallStatus: comparisonResults.overallStatus,
@@ -100,7 +102,7 @@ export async function POST(request) {
         dateOfJoining: employee.dateOfJoining,
         dateOfLeaving: employee.dateOfLeaving,
         designation: employee.designation,
-        exitReason: employee.exitReason,
+        // exitReason: employee.exitReason, // Commented out for RPTDBUAT
         fnfStatus: fnfStatus,
         department: employee.department
       },
@@ -182,7 +184,9 @@ export async function GET(request) {
       }
 
       // Calculate F&F status
-      const fnfStatus = calculateFnFStatus(employee.exitReason, employee.dateOfLeaving);
+      // Commented out exitReason for RPTDBUAT - not available
+      // const fnfStatus = calculateFnFStatus(employee.exitReason, employee.dateOfLeaving);
+      const fnfStatus = 'Pending'; // Default since exitReason not available in RPTDBUAT
 
       // Return verification details
       return NextResponse.json({
@@ -201,7 +205,8 @@ export async function GET(request) {
             dateOfJoining: employee.dateOfJoining,
             dateOfLeaving: employee.dateOfLeaving,
             designation: employee.designation,
-            exitReason: employee.exitReason,
+            // exitReason: employee.exitReason, // Commented out for RPTDBUAT
+            fnfStatus: fnfStatus,
             fnfStatus: fnfStatus,
             department: employee.department
           },
@@ -248,7 +253,7 @@ function getFieldLabel(fieldName) {
     dateOfJoining: 'Date of Joining',
     dateOfLeaving: 'Date of Leaving',
     designation: 'Designation',
-    exitReason: 'Exit Reason'
+    // exitReason: 'Exit Reason', // Commented out for RPTDBUAT
   };
   return labels[fieldName] || fieldName;
 }

@@ -90,7 +90,7 @@ const TABLES_SQL = [
             CREATE TABLE BGV_VERIFICATION_RECORDS (
                 id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 verification_id VARCHAR2(50) UNIQUE NOT NULL,
-                employee_id NUMBER NOT NULL,
+                employee_id VARCHAR2(50) NOT NULL,
                 verifier_id NUMBER NOT NULL,
                 submitted_data CLOB NOT NULL,
                 comparison_results CLOB,
@@ -101,7 +101,6 @@ const TABLES_SQL = [
                 verification_completed_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT fk_vr_employee FOREIGN KEY (employee_id) REFERENCES BGV_EMPLOYEES(id),
                 CONSTRAINT fk_vr_verifier FOREIGN KEY (verifier_id) REFERENCES BGV_VERIFIERS(id)
             )
         `
@@ -114,7 +113,7 @@ const TABLES_SQL = [
                 appeal_id VARCHAR2(50) UNIQUE NOT NULL,
                 verification_id NUMBER NOT NULL,
                 verifier_id NUMBER NOT NULL,
-                employee_id NUMBER NOT NULL,
+                employee_id VARCHAR2(50) NOT NULL,
                 appeal_reason CLOB NOT NULL,
                 documents CLOB,
                 mismatched_fields CLOB,
@@ -126,8 +125,7 @@ const TABLES_SQL = [
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT fk_appeal_vr FOREIGN KEY (verification_id) REFERENCES BGV_VERIFICATION_RECORDS(id),
-                CONSTRAINT fk_appeal_verifier FOREIGN KEY (verifier_id) REFERENCES BGV_VERIFIERS(id),
-                CONSTRAINT fk_appeal_employee FOREIGN KEY (employee_id) REFERENCES BGV_EMPLOYEES(id)
+                CONSTRAINT fk_appeal_verifier FOREIGN KEY (verifier_id) REFERENCES BGV_VERIFIERS(id)
             )
         `
     },
