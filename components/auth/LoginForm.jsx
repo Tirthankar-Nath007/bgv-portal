@@ -53,7 +53,18 @@ const LoginForm = ({ userType, onLoginSuccess }) => {
       const data = await response.json();
 
       if (data.success) {
-        // Store session for UI state with proper format
+        // Check if OTP is required (verifier login with OTP flow)
+        if (data.requireOtp && userType === "verifier") {
+          // Store email temporarily for OTP verification
+          sessionStorage.setItem("otp_email", email.toLowerCase());
+          showToast("Password verified! Redirecting to OTP verification...", "success");
+          setTimeout(() => {
+            router.push("/otp-verification");
+          }, 1500);
+          return;
+        }
+
+        // Normal login flow (admin or verifier without OTP)
         const sessionKey = userType === "admin" ? "admin_session" : "verifier_session";
 
         // Use the token from the backend response

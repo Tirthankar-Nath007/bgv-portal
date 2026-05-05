@@ -92,48 +92,13 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    // Update last login time
-    const updatedVerifier = await updateVerifier(verifier._id.toString(), {
-      lastLoginAt: new Date()
-    });
-
-    // Log success
-    await logAccess({
-      email: verifier.email,
-      role: 'verifier',
-      action: 'LOGIN',
-      status: 'SUCCESS',
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      metadata: {
-        companyName: verifier.companyName
-      }
-    });
-
-    // Generate JWT token
-    const token = generateToken({
-      id: verifier._id.toString(),
-      email: verifier.email,
-      companyName: verifier.companyName,
-      role: 'verifier'
-    });
-
-    // Return response without sensitive data
-    const verifierResponse = {
-      id: verifier._id.toString(),
-      companyName: verifier.companyName,
-      email: verifier.email,
-      isEmailVerified: verifier.isEmailVerified,
-      lastLoginAt: updatedVerifier?.lastLoginAt || verifier.lastLoginAt,
-      createdAt: verifier.createdAt
-    };
-
+    // Return success with OTP requirement flag (token will be generated after OTP verification)
     return NextResponse.json({
       success: true,
-      message: 'Login successful',
+      message: 'Password verified. Please enter the OTP to continue.',
+      requireOtp: true,
       data: {
-        verifier: verifierResponse,
-        token
+        email: verifier.email
       }
     }, { status: 200 });
 

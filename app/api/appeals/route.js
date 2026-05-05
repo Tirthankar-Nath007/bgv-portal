@@ -8,6 +8,7 @@ import {
   generateSequentialId,
   findVerificationRecordById
 } from '@/lib/sql.data.service';
+import { sendAppealNotificationEmail } from '@/lib/services/smtpEmailService';
 
 export async function POST(request) {
   try {
@@ -95,14 +96,17 @@ export async function POST(request) {
       mismatchedFields: mismatchedFields
     });
 
-    // EMAIL NOTIFICATION DISABLED - Uncomment when email provider is configured
-    // TODO: Uncomment when email service is ready
-    // try {
-    //   await sendAppealNotificationEmail(appeal);
-    // } catch (emailError) {
-    //   console.error('Failed to send appeal notification email:', emailError);
-    // }
-    console.log('[EMAIL] Would send appeal notification for:', appeal.appealId);
+    // Fetch verifier info for email notification
+    const verifier = await findVerifierById(parseInt(decoded.id));
+
+    // Send email notification to admin
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      await sendAppealNotificationEmail(appeal, verifier, baseUrl);
+      console.log('[EMAIL] Appeal notification sent for:', appeal.appealId);
+    } catch (emailError) {
+      console.error('[EMAIL] Failed to send appeal notification:', emailError);
+    }
 
     return NextResponse.json({
       success: true,

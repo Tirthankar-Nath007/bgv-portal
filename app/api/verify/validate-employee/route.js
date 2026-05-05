@@ -5,8 +5,10 @@ import {
     isVerificationBlocked,
     incrementVerificationAttempt,
     resetVerificationAttempt,
-    getBlockedMessage
+    getBlockedMessage,
+    findVerifierById
 } from '@/lib/sql.data.service';
+import { sendBlockNotificationEmail } from '@/lib/services/smtpEmailService';
 
 /**
  * Validate that Employee ID and Name match before proceeding to next step
@@ -102,6 +104,21 @@ export async function POST(request) {
 
             // Check if they just got blocked
             if (attemptResult.justBlocked) {
+                // Send email notification to admin
+                try {
+                    const verifier = await findVerifierById(verifierId);
+                    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+                    await sendBlockNotificationEmail({
+                        verifierCompanyName: verifier?.companyName || 'Unknown',
+                        verifierEmail: verifier?.email || 'N/A',
+                        employeeId: normalizedEmployeeId,
+                        attemptCount: attemptResult.attemptCount
+                    }, baseUrl);
+                    console.log('[EMAIL] Block notification sent for verifier:', verifierId);
+                } catch (emailError) {
+                    console.error('[EMAIL] Failed to send block notification:', emailError);
+                }
+
                 return NextResponse.json({
                     success: false,
                     message: getBlockedMessage()
@@ -124,6 +141,21 @@ export async function POST(request) {
                 const attemptResult = await incrementVerificationAttempt(verifierId, normalizedEmployeeId);
 
                 if (attemptResult.justBlocked) {
+                    // Send email notification to admin
+                    try {
+                        const verifier = await findVerifierById(verifierId);
+                        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+                        await sendBlockNotificationEmail({
+                            verifierCompanyName: verifier?.companyName || 'Unknown',
+                            verifierEmail: verifier?.email || 'N/A',
+                            employeeId: normalizedEmployeeId,
+                            attemptCount: attemptResult.attemptCount
+                        }, baseUrl);
+                        console.log('[EMAIL] Block notification sent for verifier:', verifierId);
+                    } catch (emailError) {
+                        console.error('[EMAIL] Failed to send block notification:', emailError);
+                    }
+
                     return NextResponse.json({
                         success: false,
                         message: getBlockedMessage()
