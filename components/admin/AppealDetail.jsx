@@ -22,6 +22,7 @@ export default function AppealDetail({ appealId }) {
         const response = await appealAPI.getAppeal(appealId);
         if (response.success) {
           setAppeal(response.data.appeal);
+          console.log('Fetched appeal data:', response.data.appeal);
         } else {
           showToast(response.message || 'Failed to load query data', 'error');
         }
@@ -104,52 +105,172 @@ export default function AppealDetail({ appealId }) {
   }
 
   return (
-    <>
-      {toast.show && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
-      <div className="card bg-base-100 shadow-xl transition-shadow duration-300 hover:shadow-primary/10">
-        <div className="card-body p-8">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="card-title text-2xl">Query ID</h2>
-              <p className="font-mono text-sm text-base-content/70 mt-1">{appeal.appealId}</p>
-            </div>
-            <span className={`badge ${getStatusBadge(appeal.status)} badge-lg capitalize`}>
-              {appeal.status}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
-              <Icon name="User" className="w-6 h-6 text-primary" />
+      <>
+        {toast.show && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+        <div className="card bg-base-100 shadow-xl transition-shadow duration-300 hover:shadow-primary/10">
+          <div className="card-body p-8">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <p className="font-semibold">Employee ID</p>
-                <p className="text-base-content/80">{appeal.employeeId}</p>
+                <h2 className="card-title text-2xl">Query Details</h2>
+                <p className="font-mono text-sm text-base-content/70 mt-1">{appeal.appealId}</p>
               </div>
+              <span className={`badge ${getStatusBadge(appeal.status)} badge-lg capitalize`}>
+                {appeal.status}
+              </span>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
-              <Icon name="Calendar" className="w-6 h-6 text-primary" />
-              <div>
-                <p className="font-semibold">Date Submitted</p>
-                <p className="text-base-content/80">{new Date(appeal.createdAt).toLocaleDateString('en-GB')}, {new Date(appeal.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
-              </div>
-            </div>
-            <div className="col-span-1 md:col-span-2 flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
-              <Icon name="Shield" className="w-6 h-6 text-primary" />
-              <div>
-                <p className="font-semibold">Verifier Info</p>
-                <p className="text-base-content/80 font-mono text-xs">
-                  {appeal.verifierInfo?.companyName || 'Unknown'} ({appeal.verifierInfo?.email || 'N/A'})
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="divider"></div>
+            {/* Employee & Verification Info Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                <Icon name="User" className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Employee ID</p>
+                  <p className="text-base-content/80">{appeal.employeeId}</p>
+                </div>
+              </div>
+              {appeal.employeeInfo?.name && (
+                <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                  <Icon name="BadgeCheck" className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="font-semibold">Employee Name</p>
+                    <p className="text-base-content/80">{appeal.employeeInfo.name}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                <Icon name="Building" className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Company / Entity (Business)</p>
+                  <p className="text-base-content/80">{appeal.employeeInfo?.entityName || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                <Icon name="Briefcase" className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Department</p>
+                  <p className="text-base-content/80">{appeal.employeeInfo?.department || 'N/A'}</p>
+                </div>
+              </div>
+              {appeal.employeeInfo?.designation && (
+                <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                  <Icon name="Award" className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="font-semibold">Designation</p>
+                    <p className="text-base-content/80">{appeal.employeeInfo.designation}</p>
+                  </div>
+                </div>
+              )}
+              {appeal.employeeInfo?.dateOfJoining && (
+                <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                  <Icon name="CalendarDays" className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="font-semibold">Date of Joining</p>
+                    <p className="text-base-content/80">{new Date(appeal.employeeInfo.dateOfJoining).toLocaleDateString('en-GB')}</p>
+                  </div>
+                </div>
+              )}
+              {appeal.employeeInfo?.dateOfLeaving && (
+                <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                  <Icon name="CalendarX" className="w-6 h-6 text-warning" />
+                  <div>
+                    <p className="font-semibold">Date of Leaving</p>
+                    <p className="text-base-content/80">{new Date(appeal.employeeInfo.dateOfLeaving).toLocaleDateString('en-GB')}</p>
+                  </div>
+                </div>
+              )}
+              {appeal.employeeInfo?.email && (
+                <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                  <Icon name="Mail" className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="font-semibold">Email</p>
+                    <p className="text-base-content/80">{appeal.employeeInfo.email}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                <Icon name="Calendar" className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Date Submitted</p>
+                  <p className="text-base-content/80">{new Date(appeal.createdAt).toLocaleDateString('en-GB')}, {new Date(appeal.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                <Icon name="Shield" className="w-6 h-6 text-primary" />
+                <div>
+                  <p className="font-semibold">Verifier Info</p>
+                  <p className="text-base-content/80 font-mono text-xs">
+                    {appeal.verifierInfo?.companyName || 'Unknown'} ({appeal.verifierInfo?.email || 'N/A'})
+                  </p>
+                </div>
+              </div>
+              {appeal.reviewedAt && (
+                <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                  <Icon name="Clock" className="w-6 h-6 text-primary" />
+                  <div>
+                    <p className="font-semibold">Reviewed On</p>
+                    <p className="text-base-content/80">{new Date(appeal.reviewedAt).toLocaleDateString('en-GB')}</p>
+                  </div>
+                </div>
+                )}
+             </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
-              <Icon name="MessageSquare" className="w-5 h-5" />
-              Verifier's Comments
+             <div className="divider"></div>
+
+             {/* Verifier's Comments */}
+             <div className="mb-6">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                <Icon name="MessageSquare" className="w-5 h-5" />
+                Verifier's Comments
+              </h3>
+              <p className="bg-base-200 p-4 rounded-lg whitespace-pre-wrap text-base-content/90">{appeal.comments || appeal.appealReason || 'No comments provided'}</p>
+            </div>
+
+            {/* Mismatched Fields Section */}
+            {appeal.verificationInfo?.comparisonResults && 
+             appeal.verificationInfo.comparisonResults.filter(r => !r.isMatch).length > 0 && (
+              <>
+                <div className="divider"></div>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                    <Icon name="AlertTriangle" className="w-5 h-5 text-warning" />
+                    Mismatched Fields ({appeal.verificationInfo.comparisonResults.filter(r => !r.isMatch).length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr>
+                          <th>Field</th>
+                          <th>Verifier Value</th>
+                          <th>Company Value (RPTDBUAT)</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {appeal.verificationInfo.comparisonResults
+                          .filter(r => !r.isMatch)
+                          .map((result, index) => (
+                          <tr key={index}>
+                            <td className="font-semibold">{result.fieldName || result.field}</td>
+                            <td className="text-error">{result.verifierValue || 'N/A'}</td>
+                            <td className="text-success">{result.companyValue || 'N/A'}</td>
+                            <td>
+                              <span className="badge badge-error badge-sm">Mismatch</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+               </>
+             )}
+
+           <div className="divider"></div>
+
+           <div className="mb-6">
+             <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+               <Icon name="MessageSquare" className="w-5 h-5" />
+               Verifier's Comments
             </h3>
             <p className="bg-base-200 p-4 rounded-lg whitespace-pre-wrap text-base-content/90">{appeal.comments || appeal.appealReason || 'No comments provided'}</p>
           </div>

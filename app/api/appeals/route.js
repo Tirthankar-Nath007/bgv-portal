@@ -5,7 +5,8 @@ import {
   addAppeal,
   getAppeals,
   findVerifierById,
-  generateSequentialId
+  generateSequentialId,
+  findVerificationRecordById
 } from '@/lib/sql.data.service';
 
 export async function POST(request) {
@@ -86,7 +87,7 @@ export async function POST(request) {
     const appeal = await addAppeal({
       appealId,
       verificationId: verificationRecord.id,  // Use numeric verification ID
-      employeeId: verificationRecord.employeeId,  // Already numeric
+      employeeId: verificationRecord.employeeId,  // String ID from RPTDBUAT
       verifierId: parseInt(decoded.id),
       appealReason: comments.trim(),
       documents: uploadedFileUrl ? [uploadedFileUrl] : [],
@@ -165,11 +166,47 @@ export async function GET(request) {
     const appealsWithVerifierInfo = await Promise.all(
       filteredAppeals.map(async (appeal) => {
         const verifier = await findVerifierById(appeal.verifierId);
-
+        
+        // Fetch employee info from RPTDBUAT
+        let employeeInfo = null;
+        try {
+          const { findEmployeeById } = require('@/lib/services/employeeDataService');
+          employeeInfo = await findEmployeeById(appeal.employeeId);
+        } catch (e) {
+          console.log('Could not fetch employee info:', e.message);
+        }
+        
+        // Fetch verification record for match score and comparison results
+        let verificationDetails = null;
+        try {
+          const verificationRecord = await findVerificationRecordById(appeal.verificationId);
+          if (verificationRecord) {
+            verificationDetails = {
+              matchScore: verificationRecord.matchScore || 0,
+              overallStatus: verificationRecord.overallStatus || 'unknown',
+              matchedFields: verificationRecord.matchedFields || 0,
+              totalFields: verificationRecord.totalFields || 0,
+              comparisonResults: verificationRecord.comparisonResults || []
+            };
+          }
+        } catch (e) {
+          console.log('Could not fetch verification record:', e.message);
+        }
+        
         return {
           appealId: appeal.appealId,
           verificationId: appeal.verificationId,
           employeeId: appeal.employeeId,
+          employeeInfo: employeeInfo ? {
+            name: employeeInfo.name,
+            entityName: employeeInfo.entityName,
+            department: employeeInfo.department,
+            designation: employeeInfo.designation,
+            dateOfJoining: employeeInfo.dateOfJoining,
+            dateOfLeaving: employeeInfo.dateOfLeaving,
+            email: employeeInfo.email
+          } : null,
+          verificationInfo: verificationDetails,
           verifierInfo: verifier ? {
             companyName: verifier.companyName,
             email: verifier.email
@@ -177,6 +214,7 @@ export async function GET(request) {
           appealReason: appeal.appealReason,
           status: appeal.status,
           mismatchedFields: appeal.mismatchedFields?.length || 0,
+          mismatchedFieldsList: appeal.mismatchedFields || [],
           hasSupportingDocument: appeal.documents?.length > 0,
           documents: appeal.documents,
           hrResponse: appeal.hrResponse,
