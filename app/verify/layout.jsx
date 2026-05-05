@@ -8,6 +8,17 @@ export default function VerifyLayout({ children }) {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Decode JWT payload without verification (client-side safe)
+  const decodeJWT = (token) => {
+    try {
+      const base64Payload = token.split('.')[1];
+      const payload = JSON.parse(atob(base64Payload));
+      return payload;
+    } catch (e) {
+      return null;
+    }
+  };
+
   useEffect(() => {
     const sessionData = localStorage.getItem('verifier_session');
     
@@ -17,10 +28,28 @@ export default function VerifyLayout({ children }) {
     }
 
     try {
-      // Check if session data is valid JSON, which confirms a session exists.
-      // The project doesn't store a 'type' field in the session object itself.
-      // The existence of 'verifier_session' is the check for a verifier.
-      JSON.parse(sessionData);
+      const session = JSON.parse(sessionData);
+      
+      // Check if session has a token
+      if (!session.token) {
+        localStorage.removeItem('verifier_session');
+        router.replace('/login');
+        return;
+      }
+
+      // Decode JWT to check expiry
+      const payload = decodeJWT(session.token);
+      
+      if (payload && payload.exp) {
+        const currentTime = Date.now() / 1000;
+        if (payload.exp < currentTime) {
+          // Token expired
+          localStorage.removeItem('verifier_session');
+          router.replace('/login');
+          return;
+        }
+      }
+
       setIsVerified(true);
     } catch (error) {
       console.error("Invalid verifier session data:", error);

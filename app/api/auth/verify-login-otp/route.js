@@ -74,13 +74,13 @@ export async function POST(request) {
       }
     });
 
-    // Generate JWT token
+    // Generate JWT token - 10 minutes for verifiers
     const token = generateToken({
       id: verifier._id.toString(),
       email: verifier.email,
       companyName: verifier.companyName,
       role: 'verifier'
-    });
+    }, '10m');
 
     // Return response without sensitive data
     const verifierResponse = {

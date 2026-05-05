@@ -77,7 +77,8 @@ const LoginForm = ({ userType, onLoginSuccess }) => {
           : {
             ...data.data.verifier,
             token: data.data.token,
-            userType: "verifier"
+            userType: "verifier",
+            loginTime: Date.now() // Store login timestamp for 10-minute timeout
           };
 
         localStorage.setItem(sessionKey, JSON.stringify(sessionData));

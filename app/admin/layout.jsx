@@ -8,6 +8,17 @@ export default function AdminLayout({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Decode JWT payload without verification (client-side safe)
+  const decodeJWT = (token) => {
+    try {
+      const base64Payload = token.split('.')[1];
+      const payload = JSON.parse(atob(base64Payload));
+      return payload;
+    } catch (e) {
+      return null;
+    }
+  };
+
   useEffect(() => {
     const sessionData = localStorage.getItem('admin_session');
     
@@ -18,9 +29,28 @@ export default function AdminLayout({ children }) {
     }
 
     try {
-      // The existence of a valid JSON object in 'admin_session' confirms authorization.
       const session = JSON.parse(sessionData);
       
+      // Check if session has a token
+      if (!session.token) {
+        localStorage.removeItem('admin_session');
+        router.replace('/admin/login');
+        return;
+      }
+
+      // Decode JWT to check expiry
+      const payload = decodeJWT(session.token);
+      
+      if (payload && payload.exp) {
+        const currentTime = Date.now() / 1000;
+        if (payload.exp < currentTime) {
+          // Token expired
+          localStorage.removeItem('admin_session');
+          router.replace('/admin/login');
+          return;
+        }
+      }
+
       // Check for isAdmin or userType property for backward compatibility
       const isAdmin = session.userType === 'admin' || session.isAdmin === true || session.role === 'super_admin' || session.role === 'hr_manager';
       
@@ -64,5 +94,5 @@ export default function AdminLayout({ children }) {
   }
 
   // Return null while redirecting to prevent flashing of unauthorized content
-  return <>{children}</>;
+  return null;
 }

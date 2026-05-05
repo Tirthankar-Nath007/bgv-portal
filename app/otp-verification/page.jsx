@@ -59,7 +59,8 @@ export default function OtpVerificationPage() {
         const sessionData = {
           ...data.data.verifier,
           token: data.data.token,
-          userType: "verifier"
+          userType: "verifier",
+          loginTime: Date.now() // Store login timestamp for 10-minute timeout
         };
 
         localStorage.setItem("verifier_session", JSON.stringify(sessionData));
