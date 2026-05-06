@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import Toast from "@/components/ui/Toast";
-import { initializeActivityTracking } from "@/lib/hooks/useInactivityTimeout";
 
 const OtpLoginForm = ({ onLoginSuccess }) => {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP
@@ -100,9 +99,6 @@ const OtpLoginForm = ({ onLoginSuccess }) => {
                 };
 
                 localStorage.setItem("verifier_session", JSON.stringify(sessionData));
-
-                // Initialize activity tracking for session timeout
-                initializeActivityTracking();
 
                 window.dispatchEvent(new Event("local-storage-changed"));
 

@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { useSessionChecker } from '@/lib/hooks/useInactivityTimeout';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  useSessionChecker();
 
   // Decode JWT payload without verification (client-side safe)
   const decodeJWT = (token) => {
@@ -20,8 +23,33 @@ export default function AdminLayout({ children }) {
   };
 
   useEffect(() => {
+    // For login page, just render (no auth check needed)
+    if (pathname === '/admin/login') {
+      // If already logged in with valid session, redirect to dashboard
+      const sessionData = localStorage.getItem('admin_session');
+      if (sessionData) {
+        try {
+          const session = JSON.parse(sessionData);
+          if (session.token) {
+            const payload = decodeJWT(session.token);
+            if (payload && payload.exp && payload.exp > Date.now() / 1000) {
+              const isAdmin = session.userType === 'admin' || session.isAdmin === true || session.role === 'super_admin' || session.role === 'hr_manager';
+              if (isAdmin) {
+                router.replace('/admin/dashboard');
+                return;
+              }
+            }
+          }
+        } catch (e) {
+          // Invalid session, stay on login page
+        }
+      }
+      setIsLoading(false);
+      return;
+    }
+
     const sessionData = localStorage.getItem('admin_session');
-    
+
     if (!sessionData) {
       router.replace('/admin/login');
       setIsLoading(false);
@@ -30,7 +58,7 @@ export default function AdminLayout({ children }) {
 
     try {
       const session = JSON.parse(sessionData);
-      
+
       // Check if session has a token
       if (!session.token) {
         localStorage.removeItem('admin_session');
@@ -40,7 +68,7 @@ export default function AdminLayout({ children }) {
 
       // Decode JWT to check expiry
       const payload = decodeJWT(session.token);
-      
+
       if (payload && payload.exp) {
         const currentTime = Date.now() / 1000;
         if (payload.exp < currentTime) {
@@ -53,7 +81,7 @@ export default function AdminLayout({ children }) {
 
       // Check for isAdmin or userType property for backward compatibility
       const isAdmin = session.userType === 'admin' || session.isAdmin === true || session.role === 'super_admin' || session.role === 'hr_manager';
-      
+
       if (isAdmin) {
         setIsAuthorized(true);
       } else {
@@ -71,7 +99,12 @@ export default function AdminLayout({ children }) {
     }
 
     setIsLoading(false);
-  }, [router]);
+  }, [router, pathname]);
+
+  // For login page, always render children
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (

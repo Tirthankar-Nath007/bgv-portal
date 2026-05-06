@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSessionChecker } from '@/lib/hooks/useInactivityTimeout';
 
 export default function VerifyLayout({ children }) {
   const router = useRouter();
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { isLoggedIn } = useSessionChecker();
 
   // Decode JWT payload without verification (client-side safe)
   const decodeJWT = (token) => {

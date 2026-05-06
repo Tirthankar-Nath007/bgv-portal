@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import Toast from "@/components/ui/Toast";
-import { initializeActivityTracking } from "@/lib/hooks/useInactivityTimeout";
 
 const LoginForm = ({ userType, onLoginSuccess }) => {
   const [email, setEmail] = useState("");
@@ -77,14 +76,10 @@ const LoginForm = ({ userType, onLoginSuccess }) => {
           : {
             ...data.data.verifier,
             token: data.data.token,
-            userType: "verifier",
-            loginTime: Date.now() // Store login timestamp for 10-minute timeout
+            userType: "verifier"
           };
 
         localStorage.setItem(sessionKey, JSON.stringify(sessionData));
-
-        // Initialize activity tracking for session timeout
-        initializeActivityTracking();
 
         // Dispatch event to notify other components like Header
         window.dispatchEvent(new Event("local-storage-changed"));
