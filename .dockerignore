@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env*
+.next
+.DS_Store
+*.md
+!.next/standalone
+!.next/static
+test/
+tests/
+docs/
