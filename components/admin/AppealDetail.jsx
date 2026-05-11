@@ -13,6 +13,7 @@ export default function AppealDetail({ appealId }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [hrResponseText, setHrResponseText] = useState('');
   const [selectedAction, setSelectedAction] = useState('approved');
+  const [isDownloadLoading, setIsDownloadLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   useEffect(() => {
@@ -68,6 +69,52 @@ export default function AppealDetail({ appealId }) {
     }
   };
 
+  const handleDownloadReport = async () => {
+    const verificationId = appeal.verificationInfo?.verificationId || appeal.verificationId;
+    if (!verificationId) {
+      showToast('No verification report available for this query', 'error');
+      return;
+    }
+    setIsDownloadLoading(true);
+    try {
+      const sessionData = localStorage.getItem('admin_session');
+      const session = sessionData ? JSON.parse(sessionData) : null;
+      if (!session?.token) {
+        showToast('Session expired. Please login again.', 'error');
+        return;
+      }
+      const response = await fetch(`/api/reports/generate?verificationId=${verificationId}`, {
+        headers: { 'Authorization': `Bearer ${session.token}` }
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `verification-report-${verificationId}.pdf`;
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="?(.+?)"?(;|$)/);
+          if (match) filename = match[1];
+        }
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        showToast('Report downloaded successfully!', 'success');
+      } else {
+        const errorData = await response.json();
+        showToast(errorData?.message || 'Failed to generate report', 'error');
+      }
+    } catch (error) {
+      console.error('Report download error:', error);
+      showToast('Failed to download report. Please try again.', 'error');
+    } finally {
+      setIsDownloadLoading(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending':
@@ -114,9 +161,23 @@ export default function AppealDetail({ appealId }) {
                 <h2 className="card-title text-2xl">Query Details</h2>
                 <p className="font-mono text-sm text-base-content/70 mt-1">{appeal.appealId}</p>
               </div>
-              <span className={`badge ${getStatusBadge(appeal.status)} badge-lg capitalize`}>
-                {appeal.status}
-              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={handleDownloadReport}
+                  disabled={isDownloadLoading}
+                >
+                  {isDownloadLoading ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    <Icon name="Download" className="w-4 h-4" />
+                  )}
+                  Download Report
+                </button>
+                <span className={`badge ${getStatusBadge(appeal.status)} badge-lg capitalize`}>
+                  {appeal.status}
+                </span>
+              </div>
             </div>
 
             {/* Employee & Verification Info Grid */}

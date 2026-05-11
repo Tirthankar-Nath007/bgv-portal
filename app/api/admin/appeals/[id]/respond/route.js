@@ -6,6 +6,7 @@ import {
   updateAppeal,
   findVerifierById,
   findVerificationRecord,
+  findVerificationRecordById,
   findEmployeeById
 } from '@/lib/sql.data.service';
 
@@ -177,7 +178,10 @@ export async function GET(request, { params }) {
 
     // Get verifier and verification information
     const verifier = await findVerifierById(appeal.verifierId);
-    const verificationRecord = await findVerificationRecord(appeal.verificationId?.toString());
+    let verificationRecord = await findVerificationRecord(appeal.verificationId?.toString());
+    if (!verificationRecord) {
+      verificationRecord = await findVerificationRecordById(appeal.verificationId);
+    }
     const employee = await findEmployeeById(appeal.employeeId?.toString());
 
     return NextResponse.json({
@@ -185,6 +189,7 @@ export async function GET(request, { params }) {
       data: {
         appeal: {
           appealId: appeal.appealId,
+          verificationId: verificationRecord?.verificationId || appeal.verificationId,
           employeeId: appeal.employeeId,
           employeeName: employee?.name || 'Unknown',
           employeeInfo: employee ? {

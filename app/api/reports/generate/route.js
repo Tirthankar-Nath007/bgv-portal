@@ -3,9 +3,12 @@ import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 import {
   findVerificationRecord,
   updateVerificationRecord,
-  findEmployeeByNumericId
+  findEmployeeByNumericId,
+  findVerifierById
 } from '@/lib/sql.data.service';
 import { generateVerificationReportPDF } from '@/lib/services/pdfService';
+
+const ADMIN_ROLES = ['admin', 'hr_manager', 'super_admin'];
 
 export async function POST(request) {
   try {
@@ -18,11 +21,12 @@ export async function POST(request) {
     }
 
     const decoded = verifyToken(token);
+    const isAdmin = ADMIN_ROLES.includes(decoded.role);
 
-    if (decoded.role !== 'verifier') {
+    if (!isAdmin && decoded.role !== 'verifier') {
       return NextResponse.json({
         success: false,
-        message: 'Verifier access required'
+        message: 'Access denied'
       }, { status: 403 });
     }
 
@@ -38,7 +42,7 @@ export async function POST(request) {
 
     const verificationRecord = await findVerificationRecord(verificationId);
 
-    if (!verificationRecord || parseInt(verificationRecord.verifierId) !== parseInt(decoded.id)) {
+    if (!verificationRecord || (!isAdmin && parseInt(verificationRecord.verifierId) !== parseInt(decoded.id))) {
       return NextResponse.json({
         success: false,
         message: 'Verification record not found or you do not have permission'
@@ -141,11 +145,12 @@ export async function GET(request) {
     }
 
     const decoded = verifyToken(token);
+    const isAdmin = ADMIN_ROLES.includes(decoded.role);
 
-    if (decoded.role !== 'verifier') {
+    if (!isAdmin && decoded.role !== 'verifier') {
       return NextResponse.json({
         success: false,
-        message: 'Verifier access required'
+        message: 'Access denied'
       }, { status: 403 });
     }
 
@@ -161,7 +166,7 @@ export async function GET(request) {
 
     const verificationRecord = await findVerificationRecord(verificationId);
 
-    if (!verificationRecord || parseInt(verificationRecord.verifierId) !== parseInt(decoded.id)) {
+    if (!verificationRecord || (!isAdmin && parseInt(verificationRecord.verifierId) !== parseInt(decoded.id))) {
       return NextResponse.json({
         success: false,
         message: 'Verification record not found'
@@ -170,11 +175,13 @@ export async function GET(request) {
 
     // Generate PDF on-the-fly from existing DB data
     const employee = await findEmployeeByNumericId(verificationRecord.employeeId);
-    
+
+    const verifier = isAdmin ? await findVerifierById(verificationRecord.verifierId) : null;
+
     const verificationData = {
       verificationId: verificationRecord.verificationId,
       verifiedAt: verificationRecord.verificationCompletedAt,
-      verifierName: decoded.companyName,
+      verifierName: verifier?.companyName || decoded.companyName,
       overallStatus: verificationRecord.overallStatus,
       matchScore: verificationRecord.matchScore,
       comparisonResults: verificationRecord.comparisonResults.map(result => ({
