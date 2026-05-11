@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import AppealList from '@/components/admin/AppealList';
 import AccessLogList from '@/components/admin/AccessLogList';
+import BlockedVerifiersList from '@/components/admin/BlockedVerifiersList';
 import ExcelExportButton from '@/components/admin/ExcelExportButton';
 import Icon from '@/components/Icon';
 import Toast from '@/components/ui/Toast';
@@ -178,13 +179,23 @@ export default function AdminDashboardPage() {
                 <span className="hidden sm:inline">Access Logs</span>
                 <span className="sm:hidden">Logs</span>
               </a>
+              <a
+                role="tab"
+                className={`tab h-14 ${activeTab === 'blocked' ? 'tab-active font-bold' : ''}`}
+                onClick={() => setActiveTab('blocked')}
+              >
+                <span className="hidden sm:inline">Blocked Verifiers</span>
+                <span className="sm:hidden">Blocked</span>
+              </a>
             </div>
 
             <div className="p-6">
               {activeTab === 'appeals' ? (
                 <AppealList />
-              ) : (
+              ) : activeTab === 'logs' ? (
                 <AccessLogList />
+              ) : (
+                <BlockedVerifiersList />
               )}
             </div>
           </div>

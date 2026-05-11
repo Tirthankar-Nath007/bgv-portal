@@ -83,8 +83,28 @@ export async function POST(request) {
         console.log('Employee details:', employee);
 
         if (!employee) {
-            // Log failed attempt
-            await incrementVerificationAttempt(verifierId, normalizedEmployeeId);
+            const attemptResult = await incrementVerificationAttempt(verifierId, normalizedEmployeeId);
+
+            if (attemptResult.justBlocked) {
+                try {
+                    const verifier = await findVerifierById(verifierId);
+                    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+                    await sendBlockNotificationEmail({
+                        verifierCompanyName: verifier?.companyName || decoded.companyName || 'Unknown',
+                        verifierEmail: verifier?.email || decoded.email || 'N/A',
+                        employeeId: normalizedEmployeeId,
+                        attemptCount: attemptResult.attemptCount
+                    }, baseUrl);
+                    console.log('[EMAIL] Block notification sent for verifier:', verifierId);
+                } catch (emailError) {
+                    console.error('[EMAIL] Failed to send block notification:', emailError);
+                }
+
+                return NextResponse.json({
+                    success: false,
+                    message: getBlockedMessage()
+                }, { status: 403 });
+            }
 
             return NextResponse.json({
                 success: false,

@@ -187,6 +187,15 @@ export async function GET(request, { params }) {
           appealId: appeal.appealId,
           employeeId: appeal.employeeId,
           employeeName: employee?.name || 'Unknown',
+          employeeInfo: employee ? {
+            name: employee.name,
+            entityName: employee.entityName,
+            department: employee.department,
+            designation: employee.designation,
+            dateOfJoining: employee.dateOfJoining,
+            dateOfLeaving: employee.dateOfLeaving,
+            email: employee.email
+          } : null,
           verifierInfo: verifier ? {
             companyName: verifier.companyName,
             email: verifier.email
@@ -203,7 +212,7 @@ export async function GET(request, { params }) {
             url: appeal.documents[0]
           } : null,
           documents: appeal.documents || [],
-          mismatchedFields: appeal.mismatchedFields,
+          mismatchedFields: appeal.mismatchedFields || [],
           status: appeal.status,
           hrResponse: appeal.hrResponse,
           hrComments: appeal.hrComments,

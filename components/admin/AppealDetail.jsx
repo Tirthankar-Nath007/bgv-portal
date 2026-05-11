@@ -128,12 +128,12 @@ export default function AppealDetail({ appealId }) {
                   <p className="text-base-content/80">{appeal.employeeId}</p>
                 </div>
               </div>
-              {appeal.employeeInfo?.name && (
+              {(appeal.employeeName || appeal.employeeInfo?.name) && (
                 <div className="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
                   <Icon name="BadgeCheck" className="w-6 h-6 text-primary" />
                   <div>
                     <p className="font-semibold">Employee Name</p>
-                    <p className="text-base-content/80">{appeal.employeeInfo.name}</p>
+                    <p className="text-base-content/80">{appeal.employeeName || appeal.employeeInfo?.name}</p>
                   </div>
                 </div>
               )}
@@ -226,14 +226,17 @@ export default function AppealDetail({ appealId }) {
             </div>
 
             {/* Mismatched Fields Section */}
-            {appeal.verificationInfo?.comparisonResults && 
-             appeal.verificationInfo.comparisonResults.filter(r => !r.isMatch).length > 0 && (
+            {(appeal.mismatchedFields?.length > 0 || 
+              (appeal.verificationInfo?.comparisonResults?.filter(r => !r.isMatch)?.length > 0)) && (
               <>
                 <div className="divider"></div>
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
                     <Icon name="AlertTriangle" className="w-5 h-5 text-warning" />
-                    Mismatched Fields ({appeal.verificationInfo.comparisonResults.filter(r => !r.isMatch).length})
+                    Mismatched Fields (
+                      {appeal.mismatchedFields?.length || 
+                       appeal.verificationInfo?.comparisonResults?.filter(r => !r.isMatch)?.length || 0}
+                    )
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="table table-zebra w-full">
@@ -246,9 +249,10 @@ export default function AppealDetail({ appealId }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {appeal.verificationInfo.comparisonResults
-                          .filter(r => !r.isMatch)
-                          .map((result, index) => (
+                        {(appeal.mismatchedFields?.length > 0 
+                          ? appeal.mismatchedFields 
+                          : appeal.verificationInfo?.comparisonResults?.filter(r => !r.isMatch) || []
+                        ).map((result, index) => (
                           <tr key={index}>
                             <td className="font-semibold">{result.fieldName || result.field}</td>
                             <td className="text-error">{result.verifierValue || 'N/A'}</td>

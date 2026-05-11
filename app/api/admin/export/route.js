@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
-import { getVerificationRecords, findVerifierById, getEmployees } from '@/lib/sql.data.service';
+import { getVerificationRecords, getVerifiersByIds, getEmployees } from '@/lib/sql.data.service';
 
 /**
  * Export verifications data as JSON (to be converted to Excel on client side)
@@ -41,13 +41,17 @@ export async function GET(request) {
             employeeMap[emp.employeeId] = emp;
         });
 
+        // Batch-load verifier info (avoids N+1)
+        const verifierIds = verifications.map(v => v.verifierId).filter(Boolean);
+        const verifierMap = verifierIds.length > 0 ? await getVerifiersByIds(verifierIds) : {};
+
         // Build export data with required headers
         const exportData = [];
         let serialNo = 1;
 
         for (const verification of verifications) {
             const employee = employeeMap[verification.employeeId] || {};
-            const verifier = await findVerifierById(verification.verifierId);
+            const verifier = verifierMap[verification.verifierId];
 
             exportData.push({
                 'S.No': serialNo++,

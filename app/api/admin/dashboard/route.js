@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
-import { getDashboardStats, findVerifierById } from '@/lib/sql.data.service';
+import { getDashboardStats, getVerifiersByIds } from '@/lib/sql.data.service';
 
 export async function GET(request) {
   try {
@@ -50,12 +50,19 @@ export async function GET(request) {
       });
     }
 
-    // Get recent activities
+    // Batch-load all verifier names (avoids N+1)
+    const recentVerifications = stats.recentVerifications.slice(0, 5);
+    const recentAppeals = stats.recentAppeals.slice(0, 5);
+    const verifierIds = [
+      ...recentVerifications.map(v => v.verifierId),
+      ...recentAppeals.map(a => a.verifierId),
+    ];
+    const verifierMap = verifierIds.length > 0 ? await getVerifiersByIds(verifierIds) : {};
+
     const recentActivities = [];
 
-    // Add recent verifications
-    for (const v of stats.recentVerifications.slice(0, 5)) {
-      const verifier = await findVerifierById(v.verifierId);
+    for (const v of recentVerifications) {
+      const verifier = verifierMap[v.verifierId];
       recentActivities.push({
         type: 'verification',
         id: v.verificationId,
@@ -66,9 +73,8 @@ export async function GET(request) {
       });
     }
 
-    // Add recent appeals
-    for (const a of stats.recentAppeals.slice(0, 5)) {
-      const verifier = await findVerifierById(a.verifierId);
+    for (const a of recentAppeals) {
+      const verifier = verifierMap[a.verifierId];
       recentActivities.push({
         type: 'appeal',
         id: a.appealId,
