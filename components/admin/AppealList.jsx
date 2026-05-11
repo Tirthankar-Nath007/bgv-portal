@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { appealAPI, handleError } from '@/lib/api.service';
 import Icon from '@/components/Icon';
 import Toast from '@/components/ui/Toast';
+
+const renderCount = { current: 0 };
 
 export default function AppealList() {
   const [appeals, setAppeals] = useState([]);
@@ -14,36 +16,54 @@ export default function AppealList() {
   const [dateTo, setDateTo] = useState('');
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'resolved'
 
-  const showToast = (message, type) => {
-    setToast({ message, type, show: true });
-  };
+  // Track renders for debugging
+  const mountTime = useRef(Date.now());
+  renderCount.current += 1;
+  console.log(`[AppealList] Render #${renderCount.current} (mounted ${Math.round((Date.now() - mountTime.current) / 1000)}s ago)`);
 
-  const closeToast = () => {
-    setToast({ ...toast, show: false });
-  };
+  const showToast = useCallback((message, type) => {
+    setToast({ message, type, show: true });
+  }, []);
+
+  const closeToast = useCallback(() => {
+    setToast(prev => ({ ...prev, show: false }));
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
+    console.time('fetchAppeals');
+
     const fetchAppeals = async () => {
       setIsLoading(true);
       try {
         const response = await appealAPI.getAppeals();
+        if (!mounted) return;
+        console.timeEnd('fetchAppeals');
+        console.log(`[AppealList] Fetched ${response.data?.appeals?.length || 0} appeals`);
         if (response.success) {
           setAppeals(response.data.appeals || []);
         } else {
           showToast(response.message || 'Failed to fetch queries', 'error');
         }
       } catch (error) {
+        if (!mounted) return;
+        console.timeEnd('fetchAppeals');
         handleError(error, showToast);
       } finally {
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     };
 
     fetchAppeals();
+
+    return () => {
+      mounted = false;
+      console.log('[AppealList] Cleanup - marking unmounted');
+    };
   }, []);
 
-  // Filter appeals by date range
-  const filterByDateRange = (appealsList) => {
+  // Filter appeals by date range (memoized)
+  const filterByDateRange = useCallback((appealsList) => {
     if (!dateFrom && !dateTo) return appealsList;
 
     return appealsList.filter(appeal => {
@@ -55,18 +75,24 @@ export default function AppealList() {
       if (to && appealDate > to) return false;
       return true;
     });
-  };
+  }, [dateFrom, dateTo]);
 
-  // Separate pending and resolved appeals with sorting
-  const pendingAppeals = filterByDateRange(
-    appeals.filter(a => a.status === 'pending')
-  ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Ascending - oldest first
+  // Separate pending and resolved appeals with sorting (memoized)
+  const pendingAppeals = useMemo(() =>
+    filterByDateRange(
+      appeals.filter(a => a.status === 'pending')
+    ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
+    [appeals, filterByDateRange]
+  );
 
-  const resolvedAppeals = filterByDateRange(
-    appeals.filter(a => a.status !== 'pending')
-  ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Descending - newest first
+  const resolvedAppeals = useMemo(() =>
+    filterByDateRange(
+      appeals.filter(a => a.status !== 'pending')
+    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+    [appeals, filterByDateRange]
+  );
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     switch (status.toLowerCase()) {
       case 'pending':
         return 'badge-warning';
@@ -77,9 +103,9 @@ export default function AppealList() {
       default:
         return 'badge-ghost';
     }
-  };
+  }, []);
 
-  const handleExportAppeals = () => {
+  const handleExportAppeals = useCallback(() => {
     const appealsToExport = activeTab === 'pending' ? pendingAppeals : resolvedAppeals;
 
     // Generate CSV
@@ -109,7 +135,7 @@ export default function AppealList() {
     URL.revokeObjectURL(url);
 
     showToast('Queries exported successfully!', 'success');
-  };
+  }, [activeTab, pendingAppeals, resolvedAppeals, showToast]);
 
   const renderAppealCard = (appeal) => (
     <div key={appeal.appealId || appeal.id} className="card bg-base-100 shadow-sm p-4 mb-4">
